@@ -1,0 +1,137 @@
+Organizations:
+
+  - &orderer
+    Name: orderer
+    ID: orderer
+    MSPDir: ../fixtures/organizations/ordererOrganizations/example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('orderer.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('orderer.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('orderer.admin')"
+    OrdererEndpoints:
+      - orderer.example.com:7050
+
+  - &auditor
+    Name: auditor
+    ID: auditor
+    MSPDir: ../fixtures/organizations/peerOrganizations/auditor.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('auditor.admin', 'auditor.peer', 'auditor.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('auditor.admin', 'auditor.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('auditor.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('auditor.peer')"
+    AnchorPeers:
+      - Host: peer0.auditor.example.com
+        Port: 7051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.example.com
+        Port: 7050
+        ClientTLSCert: ../fixtures/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+        ServerTLSCert: ../fixtures/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+  Addresses:
+    - orderer.example.com:7050
+  BatchTimeout: 500ms
+  BatchSize:
+    MaxMessageCount: 50
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+
+  Genesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *orderer
+      Capabilities:
+        <<: *OrdererCapabilities
+    Consortiums:
+      GlobalConsortium:
+        Organizations:
+          - *auditor
+
+  Global:
+    Consortium: GlobalConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *auditor
+      Capabilities:
+        <<: *ApplicationCapabilities

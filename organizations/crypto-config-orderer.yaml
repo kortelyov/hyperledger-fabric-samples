@@ -1,0 +1,6 @@
+OrdererOrgs:
+  - Name: orderer
+    Domain: example.com
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
