@@ -24,3 +24,18 @@ additional information: https://hyperledger-fabric.readthedocs.io/en/release-2.2
 <code>
 ./network.sh addOrg -o org1 -c global
 </code>
+
+<p></p>
+For checking logs
+<p></p>
+<code>
+docker logs {peer_container_id}
+</code>
+
+
+<p></p>
+For checking files for updating configuration:
+<p></p>
+<code>
+docker exec -it {cli_container_id} /bin/bash
+</code>
