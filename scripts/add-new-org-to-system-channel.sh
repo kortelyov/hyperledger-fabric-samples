@@ -28,12 +28,12 @@ fetchChannelConfig() {
   echo ">>> fetching the most recent configuration block for the ${CHANNEL} channel"
 
   set -x
-  peer channel fetch config config_block.pb -o orderer.example.com:7050 -c "${CHANNEL}" --tls --cafile "${ORDERER_CA}"
+  peer channel fetch config config_block_sys.pb -o orderer.example.com:7050 -c system-channel --tls --cafile "${ORDERER_CA}"
   { set +x; } 2>/dev/null
 
   echo ">>> decoding config block to JSON and isolating config to ${OUTPUT}"
   set -x
-  configtxlator proto_decode --input config_block.pb --type common.Block | jq .data.data[0].payload.data.config >"${OUTPUT}"
+  configtxlator proto_decode --input config_block_sys.pb --type common.Block | jq .data.data[0].payload.data.config >"${OUTPUT}"
   set +x
 }
 
@@ -46,12 +46,12 @@ createConfigUpdate() {
   OUTPUT=$3
 
   set -x
-  configtxlator proto_encode --input "${ORIGINAL}" --type common.Config >original_config.pb
-  configtxlator proto_encode --input "${MODIFIED}" --type common.Config >modified_config.pb
-  configtxlator compute_update --channel_id "${CHANNEL}" --original original_config.pb --updated modified_config.pb >config_update.pb
-  configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate | jq . >config_update.json
-  echo '{"payload":{"header":{"channel_header":{"channel_id":"'${CHANNEL}'","type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . >config_update_in_envelope.json
-  configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope >"${OUTPUT}"
+  configtxlator proto_encode --input "${ORIGINAL}" --type common.Config --output config.pb
+  configtxlator proto_encode --input "${MODIFIED}" --type common.Config --output modified_config.pb
+  configtxlator compute_update --channel_id system-channel --original config.pb --updated modified_config.pb --output config_update.pb
+  configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate | jq . > config_update.json
+  echo '{"payload":{"header":{"channel_header":{"channel_id":"'system-channel'","type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+  configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output "${OUTPUT}"
   set +x
 }
 
@@ -80,18 +80,14 @@ createConfigUpdate config.json modified_config.json org_update_in_envelope.pb
 
 signConfigtxAsPeerOrg org_update_in_envelope.pb
 
-setOrdererGlobals
-
 set -x
-peer channel update -f org_update_in_envelope.pb -o orderer.example.com:7050 -c "${CHANNEL}" --tls --cafile "${ORDERER_CA}"
+peer channel update -f org_update_in_envelope.pb -o orderer.example.com:7050 -c system-channel --tls --cafile "${ORDERER_CA}"
 set +x
 
 echo ">>> config transaction to add $ORGANIZATION to ${CHANNEL} submitted!.."
 
-setOrdererGlobals
-
 set -x
-peer channel fetch config config_block_sys_update.pb -o orderer.example.com:7050 -c "${CHANNEL}" --tls --cafile "${ORDERER_CA}"
+peer channel fetch config config_block_sys_update.pb -o orderer.example.com:7050 -c system-channel --tls --cafile "${ORDERER_CA}"
 res=$?
 verifyResult $res
 { set +x; } 2>/dev/null

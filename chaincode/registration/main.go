@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -12,8 +11,9 @@ type Registration struct {
 }
 
 func (r *Registration) Register(ctx contractapi.TransactionContextInterface, org string) error {
-	t := time.Now().Format("2006-01-02T15:04:05.999Z")
-	err := ctx.GetStub().PutState(org + "#" + t, []byte(t))
+	fmt.Println(org)
+	//t := time.Now().Format("2006-01-02T15:04:05.999Z")
+	err := ctx.GetStub().PutState(org, []byte(org))
 	if err != nil {
 		return err
 	}

@@ -18,6 +18,22 @@ VERBOSE="$5"
 
 . scripts/utils.sh
 
+parsePeerConnectionParameters() {
+  PEER_CONN_PARAMS=""
+  PEERS=""
+  while [ "$#" -gt 0 ]; do
+    echo ">>> parsePeerConnectionParameters (inside)"
+    echo $1
+    setGlobals $1
+    PEER="peer0.${CORE_PEER_LOCALMSPID}.example.com"
+    ## Set peer addresses
+    PEERS="$PEERS $PEER"
+    PEER_CONN_PARAMS="${PEER_CONN_PARAMS} --peerAddresses $CORE_PEER_ADDRESS --tlsRootCertFiles ${CORE_PEER_TLS_ROOTCERT_FILE}"
+    shift
+  done
+  PEERS="$(echo -e "$PEERS" | sed -e 's/^[[:space:]]*//')"
+}
+
 # fetchChannelConfig <channel_id> <output_json>
 # Writes the current channel config for a given channel to a JSON file
 fetchChannelConfig() {
@@ -173,6 +189,65 @@ approveChaincode() {
   echo ">>> chaincode definition approved for org ${org} in channel ${channel}"
 }
 
+# queryInstalled PEER ORG
+queryInstalled() {
+  ORG=$1
+  setGlobals $ORG
+  set -x
+  peer lifecycle chaincode queryinstalled >&log.txt
+  res=$?
+  { set +x; } 2>/dev/null
+  cat log.txt
+  PACKAGE_ID=$(sed -n "/${CC_NAME}_${CC_VERSION}/{s/^Package ID: //; s/, Label:.*$//; p;}" log.txt)
+  verifyResult $res "Query installed on peer0.org${ORG} has failed"
+  successln "Query installed successful on peer0.org${ORG} on channel"
+}
+
+lifecycleCommitChaincodeDefinition() {
+  local channel=$1
+  local name=$2
+  local org=$3
+  local version=$4
+  shift 4
+
+  parsePeerConnectionParameters $@
+
+  echo ">>> parsePeerConnectionParameters"
+  echo $PEER_CONN_PARAMS
+
+  setGlobals "${org}"
+
+  set -x
+  peer lifecycle chaincode commit -o orderer.example.com:7050 --tls --cafile "${ORDERER_CA}" --channelID "${channel}" --name "${name}" --version "${version}" --sequence 2 $PEER_CONN_PARAMS >&log.txt
+  res=$?
+  set +x
+  cat log.txt
+
+  verifyResult $res "chaincode definition commit failed for org ${org} on channel '${channel}' failed"
+  echo ">>> chaincode definition committed on channel '${channel}'"
+}
+
+chaincodeInvoke() {
+  local channel=$1
+  local name=$2
+  local org=$3
+  local args=$4
+  shift 4
+
+  parsePeerConnectionParameters $@
+
+  setGlobals "${org}"
+
+  set -x
+  peer chaincode invoke -o orderer.example.com:7050 --tls --cafile "${ORDERER_CA}" --channelID "${channel}" --name "${name}" -c "${args}" $PEER_CONN_PARAMS >&log.txt
+  res=$?
+  set +x
+  cat log.txt
+
+  verifyResult $res "invoke execution on ${CORE_PEER_ADDRESS} failed "
+  echo ">>> invoke transaction successful on ${CORE_PEER_ADDRESS} on channel '${channel}'"
+}
+
 echo ">>> creating config transaction to add $ORGANIZATION to the $CHANNEL channel..."
 
 # Fetch the config for the channel, writing it to config.json
@@ -215,27 +290,23 @@ cat log.txt
 echo "$res"
 verifyResult $res ">>> fetching config block from orderer has failed"
 
-#joinChannelWithRetry $ORGANIZATION
+joinChannelWithRetry $ORGANIZATION
 
 # chaincode_version version org
-#packageChaincode registration 1 org1
+packageChaincode registration 1 $ORGANIZATION
 # chaincode_version org version
-#installChaincode registration org1 1
+installChaincode registration $ORGANIZATION 1
 
-sleep 10
+queryInstalled $ORGANIZATION
+
 
 # channel name org version
 checkCommitReadiness global registration auditor 1
 approveChaincode global registration auditor 1
-#checkCommitReadiness global registration auditor 1
-approveChaincode global registration org1 1
-#checkCommitReadiness global registration auditor 1
+approveChaincode global registration $ORGANIZATION 1
 
-
-#queryInstalled 2
-#approveChaincode verizon localdata 2 1
-#lifecycleCommitChaincodeDefinition verizon localdata 2 1 2
-#initLedger verizon localdata "http://ecsa00401079.epam.com:8093" 2
+lifecycleCommitChaincodeDefinition global registration $ORGANIZATION 1 $ORGANIZATION auditor
+chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor $ORGANIZATION
 
 echo ">>> done..."
 

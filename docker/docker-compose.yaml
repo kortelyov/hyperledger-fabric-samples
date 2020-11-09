@@ -3,8 +3,6 @@ version: '2'
 volumes:
   orderer.example.com:
   peer0.auditor.example.com:
-#  cli.orderer.example.com:
-#  cli.auditor.example.com:
 
 networks:
   net:

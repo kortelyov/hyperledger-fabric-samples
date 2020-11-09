@@ -223,73 +223,6 @@ function networkUp() {
   fi
 }
 
-## call the script to join create the channel and join the peers of org1 and org2
-function createChannel() {
-
-## Bring up the network if it is not already up.
-
-#  if [ ! -d "organizations/peerOrganizations" ]; then
-#    echo "Bringing up network"
-#    networkUp
-#  fi
-
-  # now run the script that creates a channel. This script uses configtxgen once
-  # more to create the channel creation transaction and the anchor peer updates.
-  # configtx.yaml is mounted in the cli container, which allows us to use it to
-  # create the channel artifacts
-  generateChannelConfigurationTransaction $CONFIGTX_PROFILE $CHANNEL_NAME $ORGANIZATION
-  generateAnchorPeerUpdate $CONFIGTX_PROFILE $CHANNEL_NAME $ORGANIZATION
-
-  echo "============================="
-  echo $CONFIGTX_PROFILE
-  echo $CHANNEL_NAME
-  echo $ORGANIZATION
-  echo "============================="
-
-  docker exec cli.$ORGANIZATION.example.com ./scripts/create-channel.sh $CONFIGTX_PROFILE $CHANNEL_NAME $ORGANIZATION $CLI_DELAY $MAX_RETRY $VERBOSE
-
-#  docker exec cli.$ORGANIZATION.example.com scripts/create-channel-step2.sh $CHANNEL_NAME $CLI_DELAY $MAX_RETRY $VERBOSE
-  if [ $? -ne 0 ]; then
-    echo "Error !!! Create channel failed"
-    exit 1
-  fi
-
-}
-
-function add() {
-  generateIdentity $ORGANIZATION
-
-  echo ">>> generating $ORGANIZATION organization definition"
-  configtxgen -printOrg $ORGANIZATION > ./organizations/peerOrganizations/$ORGANIZATION.example.com/$ORGANIZATION.json
-
-  IMAGE_TAG=${IMAGETAG} docker-compose -f docker/docker-compose-ent-$ORGANIZATION.yaml -f docker/docker-compose-couch-$ORGANIZATION.yaml up -d 2>&1
-
-  echo ">>> before"
-
-  docker exec cli.orderer.example.com scripts/add-new-org-step2.sh $ORGANIZATION
-
-  echo ">>> after"
-  if [ $? -ne 0 ]; then
-    echo "Error !!! adding new organization process was failed"
-    exit 1
-  fi
-
-}
-
-
-## Call the script to isntall and instantiate a chaincode on the channel
-function deployCC() {
-
-  scripts/deployCC.sh $CHANNEL_NAME $CC_NAME $CC_SRC_PATH $CC_SRC_LANGUAGE $CC_VERSION $CC_SEQUENCE $CC_INIT_FCN $CC_END_POLICY $CC_COLL_CONFIG $CLI_DELAY $MAX_RETRY $VERBOSE
-
-  if [ $? -ne 0 ]; then
-    echo "ERROR !!! Deploying chaincode failed"
-    exit 1
-  fi
-
-  exit 0
-}
-
 # addOrg
 # $ORGANIZATION - organization name
 # For this organization need to create docker files here /docker/$ORGANIZATION/
@@ -303,11 +236,9 @@ function addOrg() {
 
   IMAGE_TAG=${IMAGETAG} docker-compose -f docker/docker-compose-"$ORGANIZATION".yaml -f docker/docker-compose-couch-"$ORGANIZATION".yaml up -d 2>&1
 
-  docker exec cli."$ORGANIZATION".example.com scripts/add-new-org-to-system-channel.sh "$ORGANIZATION" system-channel
+  docker exec cli.orderer.example.com scripts/add-new-org-to-system-channel.sh "$ORGANIZATION" system-channel
 
-  docker exec cli."$ORGANIZATION".example.com scripts/add-new-org-to-channel.sh "$ORGANIZATION" "$CHANNEL_NAME"
-
-#  docker exec cli."$ORGANIZATION".example.com scripts/add-chaincode.sh "$ORGANIZATION" "$CHANNEL_NAME" "$CHAINCODE_NAME"
+  docker exec cli.$ORGANIZATION.example.com scripts/add-new-org-to-channel.sh "$ORGANIZATION" "$CHANNEL_NAME"
 
   # shellcheck disable=SC2181
   if [ $? -ne 0 ]; then
@@ -323,6 +254,7 @@ function networkDown() {
   # stop org3 containers also in addition to org1 and org2, in case we were running sample to add org3
   docker-compose -f $COMPOSE_FILE_BASE -f $COMPOSE_FILE_COUCH down --volumes --remove-orphans
   docker-compose -f $COMPOSE_FILE_ORG1 -f $COMPOSE_FILE_COUCH_ORG1 down --volumes --remove-orphans
+  docker-compose -f $COMPOSE_FILE_ORG2 -f $COMPOSE_FILE_COUCH_ORG2 down --volumes --remove-orphans
 #  docker-compose -f $COMPOSE_FILE_COUCH_VERIZON -f $COMPOSE_FILE_VERIZON down --volumes --remove-orphans
 #  docker-compose -f docker/docker-compose-ent.yaml down --volumes --remove-orphans
   # Don't remove the generated artifacts -- note, the ledgers are always removed
@@ -381,6 +313,11 @@ COMPOSE_FILE_CA=docker/docker-compose-ca.yaml
 COMPOSE_FILE_ORG1=docker/docker-compose-org1.yaml
 COMPOSE_FILE_COUCH_ORG1=docker/docker-compose-couch-org1.yaml
 COMPOSE_FILE_CA_ORG1=docker/docker-compose-ca-org1.yaml
+
+# org2
+COMPOSE_FILE_ORG2=docker/docker-compose-org2.yaml
+COMPOSE_FILE_COUCH_ORG2=docker/docker-compose-couch-org2.yaml
+COMPOSE_FILE_CA_ORG2=docker/docker-compose-ca-org2.yaml
 
 # use go as the default language for chaincode
 CC_SRC_LANGUAGE="go"
@@ -520,25 +457,11 @@ if [ "$MODE" == "up" ]; then
 elif [ "$MODE" == "addOrg" ]; then
   echo ">>> adding new organization to the network..."
   echo
-elif [ "$MODE" == "createChannel" ]; then
-  echo "Creating channel '${CHANNEL_NAME}'."
-  echo
-  echo "If network is not up, starting nodes with CLI timeout of '${MAX_RETRY}' tries and CLI delay of '${CLI_DELAY}' seconds and using database '${DATABASE} ${CRYPTO_MODE}"
-  echo
-elif [ "$MODE" == "new" ]; then
-  echo "Creating new org..."
-  echo
-elif [ "$MODE" == "add" ]; then
-  echo "Adding new organization..."
-  echo
 elif [ "$MODE" == "down" ]; then
   echo "Stopping network"
   echo
 elif [ "$MODE" == "restart" ]; then
   echo "Restarting network"
-  echo
-elif [ "$MODE" == "deployCC" ]; then
-  echo "deploying chaincode on channel '${CHANNEL_NAME}'"
   echo
 else
   printHelp
@@ -549,14 +472,6 @@ if [ "${MODE}" == "up" ]; then
   networkUp
 elif [ "${MODE}" == "addOrg" ]; then
   addOrg
-elif [ "${MODE}" == "createChannel" ]; then
-  createChannel
-elif [ "${MODE}" == "add" ]; then
-  add
-elif [ "${MODE}" == "new" ]; then
-  newOrg
-elif [ "${MODE}" == "deployCC" ]; then
-  deployCC
 elif [ "${MODE}" == "down" ]; then
   networkDown
 elif [ "${MODE}" == "restart" ]; then
