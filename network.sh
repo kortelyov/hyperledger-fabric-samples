@@ -255,6 +255,7 @@ function networkDown() {
   docker-compose -f $COMPOSE_FILE_BASE -f $COMPOSE_FILE_COUCH down --volumes --remove-orphans
   docker-compose -f $COMPOSE_FILE_ORG1 -f $COMPOSE_FILE_COUCH_ORG1 down --volumes --remove-orphans
   docker-compose -f $COMPOSE_FILE_ORG2 -f $COMPOSE_FILE_COUCH_ORG2 down --volumes --remove-orphans
+  docker-compose -f $COMPOSE_FILE_ORG3 -f $COMPOSE_FILE_COUCH_ORG3 down --volumes --remove-orphans
 #  docker-compose -f $COMPOSE_FILE_COUCH_VERIZON -f $COMPOSE_FILE_VERIZON down --volumes --remove-orphans
 #  docker-compose -f docker/docker-compose-ent.yaml down --volumes --remove-orphans
   # Don't remove the generated artifacts -- note, the ledgers are always removed
@@ -318,6 +319,11 @@ COMPOSE_FILE_CA_ORG1=docker/docker-compose-ca-org1.yaml
 COMPOSE_FILE_ORG2=docker/docker-compose-org2.yaml
 COMPOSE_FILE_COUCH_ORG2=docker/docker-compose-couch-org2.yaml
 COMPOSE_FILE_CA_ORG2=docker/docker-compose-ca-org2.yaml
+
+# org3
+COMPOSE_FILE_ORG3=docker/docker-compose-org3.yaml
+COMPOSE_FILE_COUCH_ORG3=docker/docker-compose-couch-org3.yaml
+COMPOSE_FILE_CA_ORG3=docker/docker-compose-ca-org3.yaml
 
 # use go as the default language for chaincode
 CC_SRC_LANGUAGE="go"

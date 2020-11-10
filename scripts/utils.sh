@@ -11,11 +11,13 @@ ORDERER_CA=${PWD}/fixtures/organizations/ordererOrganizations/example.com/ordere
 PEER0_AUDITOR_CA=${PWD}/fixtures/organizations/peerOrganizations/auditor.example.com/peers/peer0.auditor.example.com/tls/ca.crt
 PEER0_ORG1_CA=${PWD}/fixtures/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 PEER0_ORG2_CA=${PWD}/fixtures/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+PEER0_ORG3_CA=${PWD}/fixtures/organizations/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt
 
 declare -A MSP
 MSP[1]="auditor"
 MSP[2]="org1"
 MSP[3]="org2"
+MSP[4]="org3"
 
 # verify the result of the end-to-end test
 verifyResult() {
@@ -51,6 +53,11 @@ setGlobals() {
     CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG2_CA
     CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
     CORE_PEER_ADDRESS=peer0.org2.example.com:9051
+  elif [ "${org}" = "org3" ]; then
+    CORE_PEER_LOCALMSPID="org3"
+    CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG3_CA
+    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp
+    CORE_PEER_ADDRESS=peer0.org3.example.com:10051
   else
     echo "${org}"
     echo ">>> error: unknown organization"

@@ -1,0 +1,22 @@
+Organizations:
+
+  - &org3
+    Name: org3
+    ID: org3
+    MSPDir: ../../fixtures/organizations/peerOrganizations/org3.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('org3.admin', 'org3.peer', 'org3.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('org3.admin', 'org3.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('org3.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('org3.peer')"
+    AnchorPeers:
+      - Host: peer0.org3.example.com
+        Port: 10051

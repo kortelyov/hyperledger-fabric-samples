@@ -111,9 +111,9 @@ joinChannelWithRetry() {
 }
 
 packageChaincode() {
-  local name=$1
-  local version=$2
-  local org=$3
+  local org=$1
+  local name=$2
+  local version=$3
 
   setGlobals "${org}"
 
@@ -127,8 +127,8 @@ packageChaincode() {
 }
 
 installChaincode() {
-  local name=$1
-  local org=$2
+  local org=$1
+  local name=$2
   local version=$3
 
   setGlobals "${org}"
@@ -292,20 +292,22 @@ verifyResult $res ">>> fetching config block from orderer has failed"
 
 joinChannelWithRetry $ORGANIZATION
 
-# chaincode_version version org
-packageChaincode registration 1 $ORGANIZATION
-# chaincode_version org version
-installChaincode registration $ORGANIZATION 1
+# org chaincode_name chaincode_version
+packageChaincode $ORGANIZATION registration 1
+# org chaincode_name chaincode_version
+installChaincode $ORGANIZATION registration 1
 
 queryInstalled $ORGANIZATION
-
 
 # channel name org version
 checkCommitReadiness global registration auditor 1
 approveChaincode global registration auditor 1
+#approveChaincode global registration org1 1
+#approveChaincode global registration org2 1
 approveChaincode global registration $ORGANIZATION 1
 
 lifecycleCommitChaincodeDefinition global registration $ORGANIZATION 1 $ORGANIZATION auditor
+#lifecycleCommitChaincodeDefinition global registration $ORGANIZATION 1 $ORGANIZATION auditor org1 org2
 chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor $ORGANIZATION
 
 echo ">>> done..."
