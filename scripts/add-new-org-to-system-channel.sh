@@ -78,7 +78,7 @@ set +x
 # write it as a transaction to org_update_in_envelope.pb
 createConfigUpdate config.json modified_config.json org_update_in_envelope.pb
 
-signConfigtxAsPeerOrg org_update_in_envelope.pb
+#signConfigtxAsPeerOrg org_update_in_envelope.pb
 
 set -x
 peer channel update -f org_update_in_envelope.pb -o orderer.example.com:7050 -c system-channel --tls --cafile "${ORDERER_CA}"

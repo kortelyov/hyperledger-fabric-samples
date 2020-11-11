@@ -248,6 +248,23 @@ function addOrg() {
 
 }
 
+# createChannel
+# $ORGANIZATION - organization name
+# For this organization need to create docker files here /docker/$ORGANIZATION/
+function createChannel() {
+
+  docker exec cli.orderer.example.com scripts/add-new-org-to-system-channel.sh "$ORGANIZATION" system-channel
+
+  docker exec cli.$ORGANIZATION.example.com scripts/add-new-org-to-channel.sh "$ORGANIZATION" "$CHANNEL_NAME"
+
+  # shellcheck disable=SC2181
+  if [ $? -ne 0 ]; then
+    echo "Error !!! adding $ORGANIZATION was failed"
+    exit 1
+  fi
+
+}
+
 
 # Tear down running network
 function networkDown() {
@@ -463,6 +480,9 @@ if [ "$MODE" == "up" ]; then
 elif [ "$MODE" == "addOrg" ]; then
   echo ">>> adding new organization to the network..."
   echo
+elif [ "$MODE" == "createChannel" ]; then
+  echo ">>> creating channel between organizations..."
+  echo
 elif [ "$MODE" == "down" ]; then
   echo "Stopping network"
   echo
@@ -478,6 +498,8 @@ if [ "${MODE}" == "up" ]; then
   networkUp
 elif [ "${MODE}" == "addOrg" ]; then
   addOrg
+elif [ "${MODE}" == "createChannel" ]; then
+  createChannel
 elif [ "${MODE}" == "down" ]; then
   networkDown
 elif [ "${MODE}" == "restart" ]; then

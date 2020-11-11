@@ -70,7 +70,7 @@ parsePeerConnectionParameters() {
   while [ "$#" -gt 0 ]; do
     setGlobals $1
     PEER="peer0.${CORE_PEER_LOCALMSPID}.example.com"
-    ## Set peer adresses
+    ## Set peer addresses
     PEERS="$PEERS $PEER"
     PEER_CONN_PARMS="${PEER_CONN_PARMS} --peerAddresses $CORE_PEER_ADDRESS --tlsRootCertFiles ${CORE_PEER_TLS_ROOTCERT_FILE}"
     shift

@@ -1,4 +1,5 @@
 #!/bin/bash
+# IN PROGRESS
 
 ORGANIZATION="$1"
 CHANNEL="$2"
@@ -22,6 +23,7 @@ parsePeerConnectionParameters() {
   PEER_CONN_PARAMS=""
   PEERS=""
   while [ "$#" -gt 0 ]; do
+    echo ">>> parsePeerConnectionParameters (inside)"
     echo $1
     setGlobals $1
     PEER="peer0.${CORE_PEER_LOCALMSPID}.example.com"
@@ -174,12 +176,12 @@ approveChaincode() {
   cat log.txt
 
   set -x
-  peer lifecycle chaincode approveformyorg -o orderer.example.com:7050 --tls --cafile "${ORDERER_CA}" --channelID "${channel}" --name "${name}" --version "${version}" --package-id "${PACKAGE_ID}" --sequence 1 >&log.txt
+  peer lifecycle chaincode approveformyorg -o orderer.example.com:7050 --tls --cafile "${ORDERER_CA}" --channelID "${channel}" --name "${name}" --version "${version}" --package-id "${PACKAGE_ID}" --sequence 2 >&log.txt
   set +x
   cat log.txt
 
   set -x
-  peer lifecycle chaincode checkcommitreadiness --channelID "${channel}" --name "${name}" --version "${version}" --sequence 1 --output json >&log.txt
+  peer lifecycle chaincode checkcommitreadiness --channelID "${channel}" --name "${name}" --version "${version}" --sequence 2 --output json >&log.txt
   set +x
   cat log.txt
 
@@ -246,73 +248,5 @@ chaincodeInvoke() {
   verifyResult $res "invoke execution on ${CORE_PEER_ADDRESS} failed "
   echo ">>> invoke transaction successful on ${CORE_PEER_ADDRESS} on channel '${channel}'"
 }
-
-ANOTHER="auditor"
-calculateAnotherOrg() {
-  if [[ $ORGANIZATION == *"org"* ]]; then
-    ANOTHER="org1"
-  fi
-}
-
-echo ">>> creating config transaction to add $ORGANIZATION to the $CHANNEL channel..."
-
-# Fetch the config for the channel, writing it to config.json
-fetchChannelConfig config.json
-
-# Modify the configuration to append the new organization
-set -x
-jq -s '.[0] * {"channel_group":{"groups":{"Application":{"groups": {"'$ORGANIZATION'":.[1]}}}}}' config.json ./fixtures/organizations/peerOrganizations/$ORGANIZATION.example.com/$ORGANIZATION.json > modified_config.json
-set +x
-
-# Compute a config update, based on the differences between config.json and modified_config.json,
-# write it as a transaction to org_update_in_envelope.pb
-createConfigUpdate config.json modified_config.json org_update_in_envelope.pb
-
-# calculate another organization for approve
-calculateAnotherOrg
-signConfigtxAsPeerOrg $ANOTHER org_update_in_envelope.pb
-
-setGlobals auditor
-set -x
-peer channel update -f org_update_in_envelope.pb -o orderer.example.com:7050 -c "${CHANNEL}" --tls --cafile "${ORDERER_CA}"
-set +x
-
-echo ">>> config transaction to add $ORGANIZATION to ${CHANNEL} submitted!.."
-
-echo
-echo ">>> fetching ${CHANNEL} channel config block from orderer..."
-echo
-
-setGlobals $ORGANIZATION
-set -x
-peer channel fetch 0 "${CHANNEL}".block -o orderer.example.com:7050 -c "${CHANNEL}" --tls --cafile "${ORDERER_CA}" >&log.txt
-res=$?
-{ set +x; } 2>/dev/null
-cat log.txt
-
-echo "$res"
-verifyResult $res ">>> fetching config block from orderer has failed"
-
-joinChannelWithRetry $ORGANIZATION
-
-# org chaincode_name chaincode_version
-packageChaincode $ORGANIZATION registration 1
-# org chaincode_name chaincode_version
-installChaincode $ORGANIZATION registration 1
-
-queryInstalled $ORGANIZATION
-
-# channel_name chaincode_name org chaincode_version
-approveChaincode global registration $ORGANIZATION 1
-
-if [ "${ORGANIZATION}" = "org1" ]; then
-  chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor $ORGANIZATION
-elif [ "${ORGANIZATION}" = "org2" ]; then
-  chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor org1 $ORGANIZATION
-elif [ "${ORGANIZATION}" = "org3" ]; then
-  chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor org1 org2 $ORGANIZATION
-fi
-
-echo ">>> done..."
 
 exit 0
