@@ -178,10 +178,10 @@ approveChaincode() {
   set +x
   cat log.txt
 
-  set -x
-  peer lifecycle chaincode checkcommitreadiness --channelID "${channel}" --name "${name}" --version "${version}" --sequence 1 --output json >&log.txt
-  set +x
-  cat log.txt
+#  set -x
+#  peer lifecycle chaincode checkcommitreadiness --channelID "${channel}" --name "${name}" --version "${version}" --sequence 1 --output json >&log.txt
+#  set +x
+#  cat log.txt
 
   res=$?
   verifyResult $res "chaincode definition approved for org ${org} in channel ${channel} failed"
@@ -305,13 +305,21 @@ queryInstalled $ORGANIZATION
 # channel_name chaincode_name org chaincode_version
 approveChaincode global registration $ORGANIZATION 1
 
-if [ "${ORGANIZATION}" = "org1" ]; then
-  chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor $ORGANIZATION
-elif [ "${ORGANIZATION}" = "org2" ]; then
-  chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor org1 $ORGANIZATION
-elif [ "${ORGANIZATION}" = "org3" ]; then
-  chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' auditor org1 org2 $ORGANIZATION
-fi
+cd /opt/gopath/src/github.com/hyperledger/fabric/peer/bin/
+./main
+cd ..
+
+WHITESPACE=" "
+input="/opt/gopath/src/github.com/hyperledger/fabric/peer/channel_orgs.txt"
+while IFS= read -r line
+do
+  echo ">>> LINE:"
+  echo "$line"
+  CHANNEL_ORGS="${CHANNEL_ORGS}""${WHITESPACE}""${line}"
+  echo ">>> CHANNEL_ORGS: $CHANNEL_ORGS"
+done <"$input"
+
+chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' $ORGANIZATION $CHANNEL_ORGS
 
 echo ">>> done..."
 

@@ -105,6 +105,7 @@ services:
       - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
       - ../fixtures/channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/channel-artifacts
       - ../fixtures/channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/fixtures/channel-artifacts
+      - ../bin:/opt/gopath/src/github.com/hyperledger/fabric/peer/bin
     depends_on:
       - peer0.auditor.example.com
     networks:
@@ -136,6 +137,7 @@ services:
       - ../fixtures/organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations
       - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
       - ../fixtures/channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/channel-artifacts
+      - ../bin:/opt/gopath/src/github.com/hyperledger/fabric/peer/bin
     depends_on:
       - orderer.example.com
     networks:
