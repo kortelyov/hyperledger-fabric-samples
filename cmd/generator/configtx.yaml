@@ -1,0 +1,22 @@
+Organizations:
+
+  - &{{.Organization}}
+    Name: {{.Organization}}
+    ID: {{.Organization}}
+    MSPDir: ../../fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('{{.Organization}}.admin', '{{.Organization}}.peer', '{{.Organization}}.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('{{.Organization}}.admin', '{{.Organization}}.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('{{.Organization}}.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('{{.Organization}}.peer')"
+    AnchorPeers:
+      - Host: peer0.{{.Organization}}.example.com
+        Port: {{.Port}}

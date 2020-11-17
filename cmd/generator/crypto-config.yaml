@@ -1,6 +1,6 @@
 PeerOrgs:
-  - Name: org2
-    Domain: org2.example.com
+  - Name: {{.Organization}}
+    Domain: {{.Organization}}.example.com
     EnableNodeOUs: true
     Template:
       Count: 1
