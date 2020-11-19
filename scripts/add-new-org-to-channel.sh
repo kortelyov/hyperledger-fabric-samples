@@ -80,6 +80,7 @@ signConfigtxAsPeerOrg() {
   set -x
   echo "signConfigtxAsPeerOrg by $ORG organization"
   peer channel signconfigtx -f "${TX}"
+  res=$?
   verifyResult $res
   { set +x; } 2>/dev/null
 }
