@@ -248,13 +248,6 @@ chaincodeInvoke() {
   echo ">>> invoke transaction successful on ${CORE_PEER_ADDRESS} on channel '${channel}'"
 }
 
-ANOTHER="auditor"
-calculateAnotherOrg() {
-  if [[ $ORGANIZATION == *"org"* ]]; then
-    ANOTHER="org1"
-  fi
-}
-
 echo ">>> creating config transaction to add $ORGANIZATION to the $CHANNEL channel..."
 
 # Fetch the config for the channel, writing it to config.json
@@ -269,9 +262,19 @@ set +x
 # write it as a transaction to org_update_in_envelope.pb
 createConfigUpdate config.json modified_config.json org_update_in_envelope.pb
 
-# calculate another organization for approve
-calculateAnotherOrg
-signConfigtxAsPeerOrg $ANOTHER org_update_in_envelope.pb
+# calculate organizations for sign
+cd /opt/gopath/src/github.com/hyperledger/fabric/peer/bin/
+./main
+cd ..
+
+input="/opt/gopath/src/github.com/hyperledger/fabric/peer/channel_orgs.txt"
+while IFS= read -r line
+do
+  if [[ $line == "auditor" ]]; then
+     continue
+  fi
+  signConfigtxAsPeerOrg $line org_update_in_envelope.pb
+done <"$input"
 
 setGlobals auditor
 set -x
@@ -305,20 +308,6 @@ queryInstalled $ORGANIZATION
 
 # channel_name chaincode_name org chaincode_version
 approveChaincode global registration $ORGANIZATION 1
-
-cd /opt/gopath/src/github.com/hyperledger/fabric/peer/bin/
-./main
-cd ..
-
-WHITESPACE=" "
-input="/opt/gopath/src/github.com/hyperledger/fabric/peer/channel_orgs.txt"
-while IFS= read -r line
-do
-  echo ">>> LINE:"
-  echo "$line"
-  CHANNEL_ORGS="${CHANNEL_ORGS}""${WHITESPACE}""${line}"
-  echo ">>> CHANNEL_ORGS: $CHANNEL_ORGS"
-done <"$input"
 
 chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args":["'$ORGANIZATION'"]}' $ORGANIZATION $CHANNEL_ORGS
 
