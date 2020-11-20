@@ -12,6 +12,7 @@ PEER0_AUDITOR_CA=${PWD}/fixtures/organizations/peerOrganizations/auditor.example
 PEER0_ORG1_CA=${PWD}/fixtures/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 PEER0_ORG2_CA=${PWD}/fixtures/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 PEER0_ORG3_CA=${PWD}/fixtures/organizations/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt
+PEER0_ORG4_CA=${PWD}/fixtures/organizations/peerOrganizations/org4.example.com/peers/peer0.org4.example.com/tls/ca.crt
 
 declare -A MSP
 MSP[1]="auditor"
@@ -58,6 +59,11 @@ setGlobals() {
     CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG3_CA
     CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp
     CORE_PEER_ADDRESS=peer0.org3.example.com:10051
+  elif [ "${org}" = "org4" ]; then
+    CORE_PEER_LOCALMSPID="org4"
+    CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG4_CA
+    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org4.example.com/users/Admin@org4.example.com/msp
+    CORE_PEER_ADDRESS=peer0.org4.example.com:11051
   else
     echo "${org}"
     echo ">>> error: unknown organization"
