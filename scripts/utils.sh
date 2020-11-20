@@ -9,10 +9,6 @@ export CORE_PEER_TLS_ENABLED=true
 
 ORDERER_CA=${PWD}/fixtures/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 PEER0_AUDITOR_CA=${PWD}/fixtures/organizations/peerOrganizations/auditor.example.com/peers/peer0.auditor.example.com/tls/ca.crt
-PEER0_ORG1_CA=${PWD}/fixtures/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-PEER0_ORG2_CA=${PWD}/fixtures/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
-PEER0_ORG3_CA=${PWD}/fixtures/organizations/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt
-PEER0_ORG4_CA=${PWD}/fixtures/organizations/peerOrganizations/org4.example.com/peers/peer0.org4.example.com/tls/ca.crt
 
 declare -A MSP
 MSP[1]="auditor"
@@ -39,31 +35,17 @@ setOrdererGlobals() {
 
 setGlobals() {
   local org=$1
-  if [ "${org}" = "auditor" ]; then
+  if [[ "${org}" == "auditor" ]]; then
     CORE_PEER_LOCALMSPID="auditor"
     CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_AUDITOR_CA
     CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/auditor.example.com/users/Admin@auditor.example.com/msp
     CORE_PEER_ADDRESS=peer0.auditor.example.com:7051
-  elif [ "${org}" = "org1" ]; then
-    CORE_PEER_LOCALMSPID="org1"
-    CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG1_CA
-    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
-    CORE_PEER_ADDRESS=peer0.org1.example.com:8051
-  elif [ "${org}" = "org2" ]; then
-    CORE_PEER_LOCALMSPID="org2"
-    CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG2_CA
-    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
-    CORE_PEER_ADDRESS=peer0.org2.example.com:9051
-  elif [ "${org}" = "org3" ]; then
-    CORE_PEER_LOCALMSPID="org3"
-    CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG3_CA
-    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp
-    CORE_PEER_ADDRESS=peer0.org3.example.com:10051
-  elif [ "${org}" = "org4" ]; then
-    CORE_PEER_LOCALMSPID="org4"
-    CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG4_CA
-    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/org4.example.com/users/Admin@org4.example.com/msp
-    CORE_PEER_ADDRESS=peer0.org4.example.com:11051
+  elif [[ "${org}" == "org"* ]]; then
+    CORE_PEER_LOCALMSPID=${org}
+    CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/fixtures/organizations/peerOrganizations/${org}.example.com/peers/peer0.${org}.example.com/tls/ca.crt
+    CORE_PEER_MSPCONFIGPATH=${PWD}/fixtures/organizations/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp
+    PORT=$(expr "${org:3}" + 7)
+    CORE_PEER_ADDRESS=peer0.${org}.example.com:${PORT}051
   else
     echo "${org}"
     echo ">>> error: unknown organization"
