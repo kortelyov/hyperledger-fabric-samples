@@ -3,7 +3,7 @@ Organizations:
   - &{{.Organization}}
     Name: {{.Organization}}
     ID: {{.Organization}}
-    MSPDir: ../../fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/msp
+    MSPDir: ../../fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/msp
     Policies:
       Readers:
         Type: Signature
@@ -18,5 +18,5 @@ Organizations:
         Type: Signature
         Rule: "OR('{{.Organization}}.peer')"
     AnchorPeers:
-      - Host: peer0.{{.Organization}}.example.com
+      - Host: peer0.{{.Organization}}{{.Domain}}.com
         Port: {{.Port}}

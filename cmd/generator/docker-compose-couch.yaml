@@ -5,8 +5,8 @@ networks:
 
 services:
 
-  couchdb.peer0.{{.Organization}}.example.com:
-    container_name: couchdb.peer0.{{.Organization}}.example.com
+  couchdb.peer0.{{.Organization}}{{.Domain}}.com:
+    container_name: couchdb.peer0.{{.Organization}}{{.Domain}}.com
     image: couchdb:3.1
     environment:
       - COUCHDB_USER=admin
@@ -16,11 +16,11 @@ services:
     networks:
       - net
 
-  peer0.{{.Organization}}.example.com:
+  peer0.{{.Organization}}{{.Domain}}.com:
     environment:
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.peer0.{{.Organization}}.example.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.peer0.{{.Organization}}{{.Domain}}.com:5984
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     depends_on:
-      - couchdb.peer0.{{.Organization}}.example.com
+      - couchdb.peer0.{{.Organization}}{{.Domain}}.com

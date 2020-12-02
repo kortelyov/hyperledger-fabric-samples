@@ -1,7 +1,7 @@
 version: '2'
 
 volumes:
-  peer0.{{.Organization}}.example.com:
+  peer0.{{.Organization}}.com:
 
 networks:
   net:
@@ -22,28 +22,28 @@ services:
     volumes:
       - /var/run/:/host/var/run/
 
-  peer0.{{.Organization}}.example.com:
-    container_name: peer0.{{.Organization}}.example.com
+  peer0.{{.Organization}}{{.Domain}}.com:
+    container_name: peer0.{{.Organization}}{{.Domain}}.com
     extends:
       service: peer-base
     environment:
-      - CORE_PEER_ID=peer0.{{.Organization}}.example.com
-      - CORE_PEER_ADDRESS=peer0.{{.Organization}}.example.com:{{.Port}}
+      - CORE_PEER_ID=peer0.{{.Organization}}{{.Domain}}.com
+      - CORE_PEER_ADDRESS=peer0.{{.Organization}}{{.Domain}}.com:{{.Port}}
       - CORE_PEER_LISTENADDRESS=0.0.0.0:{{.Port}}
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.{{.Organization}}.example.com:{{.Port}}
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.{{.Organization}}{{.Domain}}.com:{{.Port}}
       - CORE_PEER_LOCALMSPID={{.Organization}}
       - CORE_CHAINCODE_LOGGING_SHIM=INFO
     volumes:
-      - ../fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/peers/peer0.{{.Organization}}.example.com/msp:/etc/hyperledger/fabric/msp
-      - ../fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/peers/peer0.{{.Organization}}.example.com/tls:/etc/hyperledger/fabric/tls
-      - peer0.{{.Organization}}.example.com:/var/hyperledger/production
+      - ../fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/peers/peer0.{{.Organization}}{{.Domain}}.com/msp:/etc/hyperledger/fabric/msp
+      - ../fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/peers/peer0.{{.Organization}}{{.Domain}}.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.{{.Organization}}.com:/var/hyperledger/production
     ports:
       - {{.Port}}:{{.Port}}
     networks:
       - net
 
-  cli.{{.Organization}}.example.com:
-    container_name: cli.{{.Organization}}.example.com
+  cli.{{.Organization}}{{.Domain}}.com:
+    container_name: cli.{{.Organization}}{{.Domain}}.com
     image: hyperledger/fabric-tools:$IMAGE_TAG
     tty: true
     stdin_open: true
@@ -51,14 +51,14 @@ services:
       - GOPATH=/opt/gopath
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
-      - CORE_PEER_ID=cli.{{.Organization}}.example.com
-      - CORE_PEER_ADDRESS=peer0.{{.Organization}}.example.com:{{.Port}}
+      - CORE_PEER_ID=cli.{{.Organization}}{{.Domain}}.com
+      - CORE_PEER_ADDRESS=peer0.{{.Organization}}{{.Domain}}.com:{{.Port}}
       - CORE_PEER_LOCALMSPID={{.Organization}}
       - CORE_PEER_TLS_ENABLED=true
-      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/peers/peer0.{{.Organization}}.example.com/tls/server.crt
-      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/peers/peer0.{{.Organization}}.example.com/tls/server.key
-      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/peers/peer0.{{.Organization}}.example.com/tls/ca.crt
-      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}.example.com/users/Admin@{{.Organization}}.example.com/msp
+      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/peers/peer0.{{.Organization}}{{.Domain}}.com/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/peers/peer0.{{.Organization}}{{.Domain}}.com/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/peers/peer0.{{.Organization}}{{.Domain}}.com/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/organizations/peerOrganizations/{{.Organization}}{{.Domain}}.com/users/Admin@{{.Organization}}{{.Domain}}.com/msp
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
     command: /bin/bash
     volumes:
@@ -70,6 +70,6 @@ services:
       - ../fixtures/channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/fixtures/channel-artifacts
       - ../bin:/opt/gopath/src/github.com/hyperledger/fabric/peer/bin
     depends_on:
-      - peer0.{{.Organization}}.example.com
+      - peer0.{{.Organization}}{{.Domain}}.com
     networks:
       - net

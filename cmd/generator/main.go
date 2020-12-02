@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"text/template"
@@ -10,14 +12,33 @@ import (
 
 type C struct {
 	Organization string
+	Domain       string
 	Port         int
 	Couch        int
 }
 
+type O struct {
+	Orgs []string `json:"orgs"`
+}
+
 func main() {
+	var orgs O
 	count := flag.Int("count", 1, "number of organizations")
-	withDocker := flag.Bool("docker", false, "is docker-compose files needed")
+	f := flag.Bool("file", false, "read from orgs.json")
 	flag.Parse()
+
+	if *f {
+		file, err := os.Open("orgs.json")
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		b, _ := ioutil.ReadAll(file)
+		err = json.Unmarshal(b, &orgs)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	t1, err := template.ParseFiles("crypto-config.yaml")
 	if err != nil {
@@ -36,13 +57,22 @@ func main() {
 		panic("docker-compose-couch.yaml template didn't found")
 	}
 
-	for i := 1; i <= *count; i++ {
-		name := generate(i)
-		fmt.Println(name)
-		c := C{
-			Organization: name,
+	var j int
+	if x := len(orgs.Orgs); x > 0 {
+		j = x
+	} else {
+		j = *count
+	}
+
+	for i := 1; i <= j; i++ {
+		var c C
+		if len(orgs.Orgs) > 0 {
+			c.Organization = orgs.Orgs[i-1]
+		} else {
+			c.Organization = generate(i)
+			c.Domain = ".example"
 		}
-		f1, err := os.Create(fmt.Sprintf("../../organizations/crypto-config-%s.yaml", name))
+		f1, err := os.Create(fmt.Sprintf("../../organizations/crypto-config-%s.yaml", c.Organization))
 		if err != nil {
 			panic("cannot create file:" + err.Error())
 		}
@@ -53,11 +83,11 @@ func main() {
 			panic(err)
 		}
 
-		err = os.Mkdir(fmt.Sprintf("../../configtx/%s", name), 0755)
+		err = os.Mkdir(fmt.Sprintf("../../configtx/%s", c.Organization), 0755)
 		if err != nil {
 			panic(err)
 		}
-		f2, err := os.Create(fmt.Sprintf("../../configtx/%s/configtx.yaml", name))
+		f2, err := os.Create(fmt.Sprintf("../../configtx/%s/configtx.yaml", c.Organization))
 		if err != nil {
 			panic("cannot create file:" + err.Error())
 		}
@@ -71,24 +101,22 @@ func main() {
 			panic(err)
 		}
 
-		if *withDocker {
-			f3, err := os.Create(fmt.Sprintf("../../docker/docker-compose-%s.yaml", name))
-			if err != nil {
-				panic("cannot create file:" + err.Error())
-			}
-			err = t3.Execute(f3, c)
-			if err != nil {
-				panic(err)
-			}
+		f3, err := os.Create(fmt.Sprintf("../../docker/docker-compose-%s.yaml", c.Organization))
+		if err != nil {
+			panic("cannot create file:" + err.Error())
+		}
+		err = t3.Execute(f3, c)
+		if err != nil {
+			panic(err)
+		}
 
-			f4, err := os.Create(fmt.Sprintf("../../docker/docker-compose-couch-%s.yaml", name))
-			if err != nil {
-				panic("cannot create file:" + err.Error())
-			}
-			err = t4.Execute(f4, c)
-			if err != nil {
-				panic(err)
-			}
+		f4, err := os.Create(fmt.Sprintf("../../docker/docker-compose-couch-%s.yaml", c.Organization))
+		if err != nil {
+			panic("cannot create file:" + err.Error())
+		}
+		err = t4.Execute(f4, c)
+		if err != nil {
+			panic(err)
 		}
 	}
 
