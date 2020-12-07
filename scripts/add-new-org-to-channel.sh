@@ -85,7 +85,29 @@ signConfigtxAsPeerOrg() {
   { set +x; } 2>/dev/null
 }
 
-joinChannelWithRetry() {
+listChannelWithRetry() {
+  local ORG=$1
+
+  setGlobals "${ORG}"
+
+  set -x
+  peer channel list >&log.txt
+  res=$?
+  { set +x; } 2>/dev/null
+  cat log.txt
+
+  if [ $res -ne 0 -a $COUNTER -lt $MAX_RETRY ]; then
+    COUNTER=$(expr $COUNTER + 1)
+    echo "peer0.${ORG}.example.com failed to list channels, retry after $DELAY seconds"
+    sleep $DELAY
+    listChannelWithRetry "${ORG}"
+  else
+    COUNTER=1
+  fi
+  verifyResult $res "After $MAX_RETRY attempts, peer0.${ORG} has failed to list channels"
+}
+
+joinChannel() {
   local ORG=$1
 
   setGlobals "${ORG}"
@@ -95,18 +117,7 @@ joinChannelWithRetry() {
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
-
-#  check_with_backoff "${ORG}" "${CHANNEL}"
-
-#  if [ $res -ne 0 -a $COUNTER -lt $MAX_RETRY ]; then
-#    COUNTER=$(expr $COUNTER + 1)
-#    echo "peer0.${ORG}.example.com failed to join the ${CHANNEL} channel, retry after $DELAY seconds"
-#    sleep $DELAY
-#    joinChannelWithRetry "${ORG}"
-#  else
-#    COUNTER=1
-#  fi
-  verifyResult $res "After $MAX_RETRY attempts, peer0.${ORG} has failed to join channel '$CHANNEL' "
+  verifyResult $res "peer0.${ORG} has failed to join channel '$CHANNEL' "
 }
 
 packageChaincode() {
@@ -302,7 +313,8 @@ verifyResult $res ">>> fetching config block from orderer has failed"
 
 check_with_backoff auditor "${CHANNEL}" "${bn}"
 
-joinChannelWithRetry $ORGANIZATION
+listChannelWithRetry $ORGANIZATION
+joinChannel $ORGANIZATION
 
 # org chaincode_name chaincode_version
 packageChaincode $ORGANIZATION registration 1
