@@ -90,23 +90,22 @@ joinChannelWithRetry() {
 
   setGlobals "${ORG}"
 
-  echo ">>> channels list:"
-  peer channel list
-
   set -x
   peer channel join -b "${CHANNEL}".block >&log.txt
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
 
-  if [ $res -ne 0 -a $COUNTER -lt $MAX_RETRY ]; then
-    COUNTER=$(expr $COUNTER + 1)
-    echo "peer0.${ORG}.example.com failed to join the ${CHANNEL} channel, retry after $DELAY seconds"
-    sleep $DELAY
-    joinChannelWithRetry "${ORG}"
-  else
-    COUNTER=1
-  fi
+#  check_with_backoff "${ORG}" "${CHANNEL}"
+
+#  if [ $res -ne 0 -a $COUNTER -lt $MAX_RETRY ]; then
+#    COUNTER=$(expr $COUNTER + 1)
+#    echo "peer0.${ORG}.example.com failed to join the ${CHANNEL} channel, retry after $DELAY seconds"
+#    sleep $DELAY
+#    joinChannelWithRetry "${ORG}"
+#  else
+#    COUNTER=1
+#  fi
   verifyResult $res "After $MAX_RETRY attempts, peer0.${ORG} has failed to join channel '$CHANNEL' "
 }
 
@@ -267,14 +266,18 @@ cd /opt/gopath/src/github.com/hyperledger/fabric/peer/bin/
 ./main
 cd ..
 
+WHITESPACE=" "
 input="/opt/gopath/src/github.com/hyperledger/fabric/peer/channel_orgs.txt"
 while IFS= read -r line
 do
+  CHANNEL_ORGS="${CHANNEL_ORGS}""${WHITESPACE}""${line}"
   if [[ $line == "auditor" ]]; then
      continue
   fi
   signConfigtxAsPeerOrg $line org_update_in_envelope.pb
 done <"$input"
+
+bn=$(getBlockNumber auditor "${CHANNEL}")
 
 setGlobals auditor
 set -x
@@ -297,6 +300,8 @@ cat log.txt
 echo "$res"
 verifyResult $res ">>> fetching config block from orderer has failed"
 
+check_with_backoff auditor "${CHANNEL}" "${bn}"
+
 joinChannelWithRetry $ORGANIZATION
 
 # org chaincode_name chaincode_version
@@ -314,3 +319,4 @@ chaincodeInvoke global registration $ORGANIZATION '{"function":"Register","Args"
 echo ">>> done..."
 
 exit 0
+

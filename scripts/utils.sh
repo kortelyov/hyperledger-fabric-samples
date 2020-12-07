@@ -65,3 +65,60 @@ parsePeerConnectionParameters() {
   done
   PEERS="$(echo -e "$PEERS" | sed -e 's/^[[:space:]]*//')"
 }
+
+getBlockNumber() {
+  local org=$1
+  local channel=$2
+
+  setGlobals "${org}"
+
+  set -x
+  peer channel fetch newest config_block_newest.pb -o orderer.example.com:7050 -c "${channel}" --tls --cafile "${ORDERER_CA}">&log.txt
+  set +x
+
+  line=$(grep "Received block:" log.txt)
+
+  b="${line:88}"
+
+  echo $b
+}
+
+check_with_backoff() {
+  local org=$1
+  local channel=$2
+  local previous=$3
+
+  local max_attempts=5
+  local timeout=1
+  local attempt=0
+
+  while [[ $attempt < $max_attempts ]]
+  do
+    newest=$(getBlockNumber "${org}" "${channel}")
+
+    echo "---------"
+    echo "${previous}"
+    echo "${newest}"
+    echo "---------"
+
+    # shellcheck disable=SC2053
+    if [[ "${previous}" != "${newest}" ]]
+    then
+      echo "BREAK"
+      break
+    fi
+
+    echo "Failure! Retrying in $timeout.." 1>&2
+    sleep $timeout
+    attempt=$(( attempt + 1 ))
+    timeout=$(( timeout * 2 ))
+  done
+
+  # shellcheck disable=SC2053
+  if [[ "${previous}" == "${newest}" ]]
+  then
+    echo "Failed" 1>&2
+  fi
+
+  return 0
+}

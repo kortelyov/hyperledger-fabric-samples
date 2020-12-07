@@ -248,6 +248,17 @@ function addOrg() {
 
 }
 
+function check() {
+  docker exec cli.auditor.example.com scripts/retry-testing.sh
+
+  # shellcheck disable=SC2181
+  if [ $? -ne 0 ]; then
+    echo "Error !!! adding $ORGANIZATION was failed"
+    exit 1
+  fi
+
+}
+
 # createChannel
 # $ORGANIZATION - organization name
 # For this organization need to create docker files here /docker/$ORGANIZATION/
@@ -480,6 +491,9 @@ if [ "$MODE" == "up" ]; then
 elif [ "$MODE" == "addOrg" ]; then
   echo ">>> adding new organization to the network..."
   echo
+elif [ "$MODE" == "check" ]; then
+  echo ">>> checking..."
+  echo
 elif [ "$MODE" == "createChannel" ]; then
   echo ">>> creating channel between organizations..."
   echo
@@ -498,6 +512,8 @@ if [ "${MODE}" == "up" ]; then
   networkUp
 elif [ "${MODE}" == "addOrg" ]; then
   addOrg
+elif [ "${MODE}" == "check" ]; then
+  check
 elif [ "${MODE}" == "createChannel" ]; then
   createChannel
 elif [ "${MODE}" == "down" ]; then
