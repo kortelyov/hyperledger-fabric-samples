@@ -1,8 +1,13 @@
 {
   "orgs":[
-    "organization1",
-    "organization2",
-    "organization3",
-    "organization4"
+    "org1.example.com",
+    "org2.example.com",
+    "org3.example.com",
+    "org4.example.com",
+    "org5.example.com",
+    "org6.example.com",
+    "org7.example.com",
+    "org8.example.com",
+    "org9.example.com"
   ]
 }
