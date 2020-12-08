@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# system-channel update allowed only for orderer
+# so all next command runs on behalf of orderer
+
 ORGANIZATION="$1"
 CHANNEL="$2"
 DELAY="$3"
@@ -23,6 +26,8 @@ VERBOSE="$5"
 fetchChannelConfig() {
   OUTPUT=$1
 
+  # fetching the most recent configuration block
+  # from the system-channel on behalf of the orderer
   setOrdererGlobals
 
   echo ">>> fetching the most recent configuration block for the ${CHANNEL} channel"
@@ -33,6 +38,7 @@ fetchChannelConfig() {
 
   echo ">>> decoding config block to JSON and isolating config to ${OUTPUT}"
   set -x
+  # command decode protobuf configuration to "${OUTPUT}" file (*.json)
   configtxlator proto_decode --input config_block_sys.pb --type common.Block | jq .data.data[0].payload.data.config >"${OUTPUT}"
   set +x
 }
@@ -55,6 +61,8 @@ createConfigUpdate() {
   set +x
 }
 
+# signConfigtxAsPeerOrg <organization>
+# Set the peerOrg admin of an org and signing the config update
 signConfigtxAsPeerOrg() {
   local TX=$1
 
@@ -78,8 +86,8 @@ set +x
 # write it as a transaction to org_update_in_envelope.pb
 createConfigUpdate config.json modified_config.json org_update_in_envelope.pb
 
-#signConfigtxAsPeerOrg org_update_in_envelope.pb
 
+# update configuration into the system-channel
 set -x
 peer channel update -f org_update_in_envelope.pb -o orderer.example.com:7050 -c system-channel --tls --cafile "${ORDERER_CA}"
 set +x

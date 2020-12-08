@@ -1,5 +1,4 @@
 #!/bin/bash
-# IN PROGRESS
 
 ORGANIZATION="$1"
 CHANNEL="$2"

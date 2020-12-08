@@ -85,11 +85,14 @@ signConfigtxAsPeerOrg() {
   { set +x; } 2>/dev/null
 }
 
+# listChannelWithRetry <organization>
+# Join to the channel6 but before checking available channels
 listChannelWithRetry() {
   local ORG=$1
 
   setGlobals "${ORG}"
 
+  # get channel list
   set -x
   peer channel list >&log.txt
   res=$?
@@ -107,6 +110,7 @@ listChannelWithRetry() {
   verifyResult $res "After $MAX_RETRY attempts, peer0.${ORG} has failed to list channels"
 }
 
+# joinChannel <organization> <channel>
 joinChannel() {
   local ORG=$1
 
@@ -120,6 +124,8 @@ joinChannel() {
   verifyResult $res "peer0.${ORG} has failed to join channel '$CHANNEL' "
 }
 
+# packageChaincode <organization> <chaincode_name> <chaincode_version>
+# more:  https://hyperledger-fabric.readthedocs.io/en/release-2.2/chaincode_lifecycle.htmll#step-one-packaging-the-smart-contract
 packageChaincode() {
   local org=$1
   local name=$2
@@ -136,6 +142,8 @@ packageChaincode() {
   echo ">>> chaincode is packaged by org ${org}"
 }
 
+# installChaincode <organization> <chaincode_name> <chaincode_version>
+# more:  https://hyperledger-fabric.readthedocs.io/en/release-2.2/chaincode_lifecycle.html#step-two-install-the-chaincode-on-your-peers
 installChaincode() {
   local org=$1
   local name=$2
@@ -153,6 +161,9 @@ installChaincode() {
   echo ">>> chaincode ${name} is installed on org ${org}"
 }
 
+# checkCommitReadiness <channel_name> <chaincode_name> <organization> <chaincode_version>
+# Command to check whether committing the chaincode definition should be successful
+# based on which channel members have approved a definition before committing it to the channel
 checkCommitReadiness() {
   local channel=$1
   local name=$2
@@ -169,6 +180,8 @@ checkCommitReadiness() {
   verifyResult $res "Chaincode checkCommitReadiness failed for org ${org} on channel '${channel}' failed"
 }
 
+# approveChaincode <channel_name> <chaincode_name> <organization> <chaincode_version>
+# These approved organization definitions allow channel members to agree on a chaincode before it can be used on a channel.
 approveChaincode() {
   local channel=$1
   local name=$2
@@ -189,30 +202,32 @@ approveChaincode() {
   set +x
   cat log.txt
 
-#  set -x
-#  peer lifecycle chaincode checkcommitreadiness --channelID "${channel}" --name "${name}" --version "${version}" --sequence 1 --output json >&log.txt
-#  set +x
-#  cat log.txt
-
   res=$?
   verifyResult $res "chaincode definition approved for org ${org} in channel ${channel} failed"
   echo ">>> chaincode definition approved for org ${org} in channel ${channel}"
 }
 
-# queryInstalled PEER ORG
+# queryInstalled <organization>
+# Query the installed chaincodes on a peer.
 queryInstalled() {
   ORG=$1
+
   setGlobals $ORG
+
   set -x
   peer lifecycle chaincode queryinstalled >&log.txt
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
+
   PACKAGE_ID=$(sed -n "/${CC_NAME}_${CC_VERSION}/{s/^Package ID: //; s/, Label:.*$//; p;}" log.txt)
   verifyResult $res "Query installed on peer0.org${ORG} has failed"
   successln "Query installed successful on peer0.org${ORG} on channel"
 }
 
+# lifecycleCommitChaincodeDefinition <channel_name> <chaincode_name> <organization> <chaincode_version>
+# Once a sufficient number of organizations approve a chaincode definition for their organizations (a majority by default),
+# one organization can commit the definition the channel
 lifecycleCommitChaincodeDefinition() {
   local channel=$1
   local name=$2
@@ -220,10 +235,9 @@ lifecycleCommitChaincodeDefinition() {
   local version=$4
   shift 4
 
+  # function got all connection parameters, concatenate it into single string
+  # and save it into $PEER_CONN_PARAMS variable
   parsePeerConnectionParameters $@
-
-  echo ">>> parsePeerConnectionParameters"
-  echo $PEER_CONN_PARAMS
 
   setGlobals "${org}"
 
@@ -237,6 +251,7 @@ lifecycleCommitChaincodeDefinition() {
   echo ">>> chaincode definition committed on channel '${channel}'"
 }
 
+# chaincodeInvoke <channel_name> <chaincode_name> <organization> <arguments>
 chaincodeInvoke() {
   local channel=$1
   local name=$2
@@ -244,6 +259,8 @@ chaincodeInvoke() {
   local args=$4
   shift 4
 
+  # function got all connection parameters, concatenate it into single string
+  # and save it into $PEER_CONN_PARAMS variable
   parsePeerConnectionParameters $@
 
   setGlobals "${org}"
@@ -273,7 +290,9 @@ set +x
 createConfigUpdate config.json modified_config.json org_update_in_envelope.pb
 
 # calculate organizations for sign
+# binary file for calculating was copied into folder below (you can check it in CLI container)
 cd /opt/gopath/src/github.com/hyperledger/fabric/peer/bin/
+# run the binary thats calculate organizations in the channel
 ./main
 cd ..
 
